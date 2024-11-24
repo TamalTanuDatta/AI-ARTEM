@@ -73,8 +73,10 @@ class TestReport:
                     --text-secondary: #b3b3b3;
                     --accent-color: #4CAF50;
                     --error-color: #ff4444;
+                    --warning-color: #ffbb33;
                     --success-color: #00C851;
                     --border-radius: 8px;
+                    --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
                 }
                 
                 body {
@@ -86,45 +88,110 @@ class TestReport:
                     line-height: 1.6;
                 }
                 
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                }
+                
                 .header {
                     background-color: var(--bg-secondary);
                     padding: 30px;
                     border-radius: var(--border-radius);
                     margin-bottom: 30px;
-                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                    box-shadow: var(--shadow);
+                }
+                
+                .header h1 {
+                    margin: 0;
+                    color: var(--accent-color);
+                    font-size: 2.5em;
+                    margin-bottom: 15px;
+                    text-align: center;
+                }
+                
+                .header-info {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 20px;
+                    margin-top: 20px;
+                    text-align: center;
+                }
+                
+                .header-info p {
+                    margin: 5px 0;
+                    color: var(--text-secondary);
                 }
                 
                 .metrics {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
                     gap: 20px;
                     margin-bottom: 30px;
                 }
                 
                 .metric-card {
                     background-color: var(--bg-secondary);
-                    padding: 20px;
+                    padding: 25px;
                     border-radius: var(--border-radius);
                     text-align: center;
+                    box-shadow: var(--shadow);
+                    transition: transform 0.2s;
+                }
+                
+                .metric-card:hover {
+                    transform: translateY(-5px);
                 }
                 
                 .metric-value {
-                    font-size: 2em;
+                    font-size: 2.5em;
                     font-weight: bold;
-                    color: var(--accent-color);
+                    margin: 10px 0;
+                }
+                
+                .metric-label {
+                    color: var(--text-secondary);
+                    font-size: 1.1em;
+                }
+                
+                .success-metric .metric-value {
+                    color: var(--success-color);
+                }
+                
+                .error-metric .metric-value {
+                    color: var(--error-color);
+                }
+                
+                .warning-metric .metric-value {
+                    color: var(--warning-color);
                 }
                 
                 .steps-container {
                     background-color: var(--bg-secondary);
                     padding: 30px;
                     border-radius: var(--border-radius);
+                    margin-bottom: 30px;
+                    box-shadow: var(--shadow);
+                }
+                
+                .steps-container h2 {
+                    color: var(--accent-color);
+                    margin-top: 0;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 2px solid var(--accent-color);
                 }
                 
                 .step {
-                    margin-bottom: 15px;
-                    padding: 15px;
+                    margin-bottom: 20px;
+                    padding: 20px;
                     background-color: var(--bg-primary);
                     border-radius: var(--border-radius);
+                    box-shadow: var(--shadow);
+                    transition: transform 0.2s;
+                }
+                
+                .step:hover {
+                    transform: translateX(5px);
                 }
                 
                 .step.success {
@@ -133,71 +200,139 @@ class TestReport:
                 
                 .step.error {
                     border-left: 4px solid var(--error-color);
+                    background-color: rgba(255, 68, 68, 0.1);
                 }
                 
                 .timestamp {
                     color: var(--text-secondary);
                     font-size: 0.9em;
+                    margin-bottom: 5px;
+                }
+                
+                .step-type {
+                    font-weight: bold;
+                    color: var(--accent-color);
+                    margin-bottom: 5px;
+                }
+                
+                .step-description {
+                    margin: 10px 0;
+                }
+                
+                .error-message {
+                    color: var(--error-color);
+                    background-color: rgba(255, 68, 68, 0.1);
+                    padding: 10px;
+                    border-radius: var(--border-radius);
+                    margin-top: 10px;
+                    font-family: monospace;
+                }
+                
+                .progress-bar {
+                    height: 10px;
+                    background-color: var(--bg-primary);
+                    border-radius: var(--border-radius);
+                    margin: 20px 0;
+                    overflow: hidden;
+                }
+                
+                .progress-fill {
+                    height: 100%;
+                    background-color: var(--accent-color);
+                    transition: width 0.5s ease-in-out;
+                }
+                
+                @media (max-width: 768px) {
+                    body {
+                        padding: 10px;
+                    }
+                    
+                    .metrics {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .step {
+                        padding: 15px;
+                    }
                 }
             </style>
         </head>
         <body>
-            <div class="header">
-                <h1>Leasingmarkt Autonomous Test Report</h1>
-                <p>Start Time: {{ start_time }}</p>
-                <p>End Time: {{ end_time }}</p>
-                <p>Duration: {{ duration }} seconds</p>
-            </div>
-            
-            <div class="metrics">
-                <div class="metric-card">
-                    <div class="metric-value">{{ total_actions }}</div>
-                    <div>Total Actions</div>
+            <div class="container">
+                <div class="header">
+                    <h1>🤖 Leasingmarkt Autonomous Test Report</h1>
+                    <div class="header-info">
+                        <div>
+                            <p><strong>Start Time:</strong><br>{{ start_time }}</p>
+                        </div>
+                        <div>
+                            <p><strong>End Time:</strong><br>{{ end_time }}</p>
+                        </div>
+                        <div>
+                            <p><strong>Duration:</strong><br>{{ duration }} seconds</p>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ (successful_actions / total_actions * 100) if total_actions > 0 else 0 }}%"></div>
+                    </div>
                 </div>
-                <div class="metric-card">
-                    <div class="metric-value">{{ successful_actions }}</div>
-                    <div>Successful Actions</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">{{ failed_actions }}</div>
-                    <div>Failed Actions</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">{{ visited_urls }}</div>
-                    <div>Pages Visited</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">{{ assertions.passed }}</div>
-                    <div>Assertions Passed</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-value">{{ assertions.failed }}</div>
-                    <div>Assertions Failed</div>
-                </div>
-            </div>
-            
-            <div class="steps-container">
-                <h2>Test Steps</h2>
-                {% for step in test_steps %}
-                <div class="step {{ 'success' if step.status == 'Success' else 'error' }}">
-                    <div class="timestamp">{{ step.timestamp }}</div>
-                    <div><strong>{{ step.action_type }}</strong>: {{ step.description }}</div>
-                    {% if step.error %}
-                    <div style="color: var(--error-color)">Error: {{ step.error }}</div>
-                    {% endif %}
-                </div>
-                {% endfor %}
                 
-                <h2>Assertions</h2>
-                {% for assertion in assertions.details %}
-                <div class="step {{ 'success' if assertion.status == 'Passed' else 'error' }}">
-                    <div class="timestamp">{{ assertion.timestamp }}</div>
-                    <div><strong>{{ assertion.type }}</strong>: {{ assertion.description }}</div>
-                    {% if assertion.error %}
-                    <div style="color: var(--error-color)">Error: {{ assertion.error }}</div>
-                    {% endif %}
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Actions</div>
+                        <div class="metric-value">{{ total_actions }}</div>
+                    </div>
+                    <div class="metric-card success-metric">
+                        <div class="metric-label">Successful Actions</div>
+                        <div class="metric-value">{{ successful_actions }}</div>
+                    </div>
+                    <div class="metric-card error-metric">
+                        <div class="metric-label">Failed Actions</div>
+                        <div class="metric-value">{{ failed_actions }}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Pages Visited</div>
+                        <div class="metric-value">{{ visited_urls }}</div>
+                    </div>
+                    <div class="metric-card success-metric">
+                        <div class="metric-label">Assertions Passed</div>
+                        <div class="metric-value">{{ assertions.passed }}</div>
+                    </div>
+                    <div class="metric-card error-metric">
+                        <div class="metric-label">Assertions Failed</div>
+                        <div class="metric-value">{{ assertions.failed }}</div>
+                    </div>
                 </div>
-                {% endfor %}
+                
+                <div class="steps-container">
+                    <h2>🔍 Test Steps</h2>
+                    {% for step in test_steps %}
+                    <div class="step {{ 'success' if step.status == 'Success' else 'error' }}">
+                        <div class="timestamp">⏰ {{ step.timestamp }}</div>
+                        <div class="step-type">{{ step.action_type }}</div>
+                        <div class="step-description">{{ step.description }}</div>
+                        {% if step.error %}
+                        <div class="error-message">
+                            <strong>❌ Error:</strong> {{ step.error }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    <h2>✅ Assertions</h2>
+                    {% for assertion in assertions.details %}
+                    <div class="step {{ 'success' if assertion.status == 'Passed' else 'error' }}">
+                        <div class="timestamp">⏰ {{ assertion.timestamp }}</div>
+                        <div class="step-type">{{ assertion.type }}</div>
+                        <div class="step-description">{{ assertion.description }}</div>
+                        {% if assertion.error %}
+                        <div class="error-message">
+                            <strong>❌ Error:</strong> {{ assertion.error }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </body>
         </html>
