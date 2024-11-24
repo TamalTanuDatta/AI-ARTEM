@@ -40,6 +40,27 @@ python src/bot/main.py
    - Train a model based on your interactions
    - Execute automated tests using the learned patterns
 
+## How to Run Tests
+
+You can run the autonomous testing bot for 2 minutes with this command:
+
+```bash
+python3 -m src.bot.autonomous_lm_test_2_min
+```
+
+### Test Reports
+- The test results will be saved as an HTML file in the `reports` directory
+- Each time you run the tests, the previous report will be automatically deleted to maintain cleanliness
+- The bot performs various assertions during test execution to validate website behavior and functionality
+
+### What the Bot Tests
+The autonomous testing bot:
+- Navigates through the website
+- Interacts with various UI elements
+- Validates links and page responses
+- Performs assertions on page content and functionality
+- Generates comprehensive test reports with details of all actions and validations
+
 ## Components
 
 ### InteractionRecorder
