@@ -21,34 +21,94 @@ class TestReport:
         self.successful_actions = 0
         self.failed_actions = 0
         self.visited_urls = set()
+        self.page_visits = []  # Track detailed page visits
+        self.button_clicks = []  # Track button interactions
+        self.element_interactions = []  # Track other element interactions
         self.assertions = {
             'passed': 0,
             'failed': 0,
-            'details': []
+            'details': [],
+            'page_interactions': {}  # Track interactions per page
         }
         
-    def add_assertion(self, assertion_type, description, status, error=None):
+    def add_assertion(self, assertion_type, description, status, error=None, url=None, element_info=None):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.assertions['details'].append({
-            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'timestamp': timestamp,
             'type': assertion_type,
             'description': description,
             'status': status,
-            'error': str(error) if error else None
+            'error': str(error) if error else None,
+            'url': url,
+            'element_info': element_info
         })
-        if status == "Passed":
-            self.assertions['passed'] += 1
-        else:
-            self.assertions['failed'] += 1
+        
+        # Track page interactions
+        if url:
+            if url not in self.assertions['page_interactions']:
+                self.assertions['page_interactions'][url] = {
+                    'first_visit': timestamp,
+                    'last_visit': timestamp,
+                    'interactions': [],
+                    'successful_interactions': 0,
+                    'failed_interactions': 0
+                }
+            
+            page_info = self.assertions['page_interactions'][url]
+            page_info['last_visit'] = timestamp
+            page_info['interactions'].append({
+                'timestamp': timestamp,
+                'type': assertion_type,
+                'description': description,
+                'status': status,
+                'element_info': element_info
+            })
+            
+            if status == "Passed":
+                page_info['successful_interactions'] += 1
+                self.assertions['passed'] += 1
+            else:
+                page_info['failed_interactions'] += 1
+                self.assertions['failed'] += 1
 
-    def add_step(self, action_type, description, status="Success", error=None):
+    def add_step(self, action_type, description, status="Success", error=None, url=None, element_info=None):
         step = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "action_type": action_type,
             "description": description,
             "status": status,
-            "error": str(error) if error else None
+            "error": str(error) if error else None,
+            "url": url,
+            "element_info": element_info
         }
         self.test_steps.append(step)
+        
+        if url and action_type == "Navigation":
+            self.page_visits.append({
+                "timestamp": step["timestamp"],
+                "url": url,
+                "status": status
+            })
+            self.visited_urls.add(url)
+        
+        elif action_type == "Click" and element_info:
+            self.button_clicks.append({
+                "timestamp": step["timestamp"],
+                "element": element_info,
+                "url": url,
+                "status": status,
+                "error": str(error) if error else None
+            })
+        
+        elif element_info:
+            self.element_interactions.append({
+                "timestamp": step["timestamp"],
+                "action_type": action_type,
+                "element": element_info,
+                "url": url,
+                "status": status,
+                "error": str(error) if error else None
+            })
         
         if status == "Success":
             self.successful_actions += 1
@@ -352,6 +412,42 @@ class TestReport:
                     left: -20px;
                 }
                 
+                .page-summary {
+                    background-color: var(--bg-primary);
+                    padding: 20px;
+                    border-radius: var(--border-radius);
+                    margin-bottom: 20px;
+                }
+
+                .page-summary h3 {
+                    color: var(--accent-color);
+                    margin-top: 0;
+                    margin-bottom: 15px;
+                    border-bottom: 1px solid var(--accent-color);
+                    padding-bottom: 5px;
+                }
+
+                .page-stats {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 10px;
+                    margin-bottom: 15px;
+                }
+
+                .page-stats p {
+                    margin: 5px 0;
+                    color: var(--text-secondary);
+                }
+
+                .page-interactions {
+                    margin-top: 15px;
+                }
+
+                .page-interactions h4 {
+                    color: var(--text-primary);
+                    margin-bottom: 10px;
+                }
+                
                 @media (max-width: 768px) {
                     body {
                         padding: 10px;
@@ -414,47 +510,43 @@ class TestReport:
                     </div>
                 </div>
                 
+                {% if assertions.page_interactions %}
                 <div class="summary-section">
-                    <h2>📊 Test Summary Analysis</h2>
+                    <h2>🌐 Page Interactions Summary</h2>
                     <div class="summary-content">
-                        <p>The bot ran for {{ duration }} seconds and performed {{ total_actions }} actions.</p>
-                        
-                        <div class="interaction-type">
-                            <h3>🎯 Successful Interactions</h3>
-                            <ul class="interaction-list">
-                            {% for type, interactions in interaction_types.items() %}
-                                <li>
-                                    <strong>{{ type }}:</strong>
-                                    <ul class="interaction-list">
-                                    {% for interaction in interactions %}
-                                        <li>{{ interaction }}</li>
-                                    {% endfor %}
-                                    </ul>
-                                </li>
-                            {% endfor %}
-                            </ul>
-                        </div>
-                        
-                        {% if error_analysis %}
-                        <div class="error-analysis">
-                            <h3>❌ Error Analysis</h3>
-                            {% for error_type, errors in error_analysis.items() %}
-                            <div class="error-type">
-                                <h4>{{ error_type }} ({{ errors|length }})</h4>
-                                <ul class="error-list">
-                                {% for error in errors %}
-                                    <li>
-                                        <strong>{{ error.element }}</strong>
-                                        <div class="error-message">{{ error.error }}</div>
+                        {% for url, page_info in assertions.page_interactions.items() %}
+                        <div class="page-summary">
+                            <h3>{{ url }}</h3>
+                            <div class="page-stats">
+                                <p>First Visit: {{ page_info.first_visit }}</p>
+                                <p>Last Visit: {{ page_info.last_visit }}</p>
+                                <p>Total Interactions: {{ page_info.interactions|length }}</p>
+                                <p>Successful: {{ page_info.successful_interactions }}</p>
+                                <p>Failed: {{ page_info.failed_interactions }}</p>
+                            </div>
+                            <div class="page-interactions">
+                                <h4>Interactions:</h4>
+                                <ul class="interaction-list">
+                                    {% for interaction in page_info.interactions %}
+                                    <li class="{% if interaction.status == 'Passed' %}success{% else %}error{% endif %}">
+                                        <span class="timestamp">{{ interaction.timestamp }}</span>
+                                        <strong>{{ interaction.type }}:</strong> 
+                                        {{ interaction.description }}
+                                        {% if interaction.element_info %}
+                                        <br><small>Element: {{ interaction.element_info }}</small>
+                                        {% endif %}
+                                        {% if interaction.error %}
+                                        <div class="error-message">{{ interaction.error }}</div>
+                                        {% endif %}
                                     </li>
-                                {% endfor %}
+                                    {% endfor %}
                                 </ul>
                             </div>
-                            {% endfor %}
                         </div>
-                        {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
+                {% endif %}
                 
                 <div class="steps-container">
                     <h2>🔍 Test Steps</h2>
@@ -500,9 +592,7 @@ class TestReport:
             failed_actions=self.failed_actions,
             visited_urls=len(self.visited_urls),
             test_steps=self.test_steps,
-            assertions=self.assertions,
-            interaction_types=interaction_types,
-            error_analysis=error_analysis
+            assertions=self.assertions
         )
         
         # Create reports directory if it doesn't exist
@@ -577,7 +667,7 @@ class AutomatedTester:
                 
                 # Navigate to initial URL
                 print("\nNavigating to starting URL...")
-                report.add_step("Navigation", f"Navigating to starting URL: {url}")
+                report.add_step("Navigation", f"Navigating to starting URL: {url}", url=url)
                 page.goto(url)
                 report.visited_urls.add(url)
                 
@@ -638,66 +728,11 @@ class AutomatedTester:
         report_path = report.generate_html_report()
         print(f"\nTest report generated: {report_path}")
             
-    def _perform_page_checks(self, page, report):
-        try:
-            # 1. Basic Page Structure Check
-            body = page.locator("body")
-            if body:
-                report.add_assertion("Page Structure", "Body element is present", "Passed")
-            
-            # 2. Navigation Elements
-            nav_elements = page.query_selector_all("nav, header, .navigation")
-            if nav_elements:
-                report.add_assertion("Navigation", "Navigation elements are present", "Passed")
-            
-            # 3. Interactive Elements
-            buttons = page.query_selector_all("button, [role='button'], .btn")
-            links = page.query_selector_all("a[href]")
-            
-            # Check buttons
-            for button in buttons[:5]:  # Check first 5 buttons
-                try:
-                    if button.is_visible() and button.is_enabled():
-                        report.add_assertion("Button", f"Button '{button.text_content()[:30]}...' is accessible", "Passed")
-                except Exception as e:
-                    report.add_assertion("Button", f"Button validation failed", "Failed", e)
-            
-            # 4. Link Validation
-            for link in links[:5]:  # Check first 5 links
-                try:
-                    href = link.get_attribute("href")
-                    if href and not href.startswith(("#", "javascript:", "mailto:")):
-                        absolute_url = urljoin(self.base_url, href)
-                        if self.validate_link(page, absolute_url):
-                            report.add_assertion("Link", f"Valid link: {absolute_url[:50]}...", "Passed")
-                        else:
-                            report.add_assertion("Link", f"Invalid link: {absolute_url[:50]}...", "Failed")
-                except Exception as e:
-                    report.add_assertion("Link", "Link validation failed", "Failed", e)
-            
-            # 5. Content Check
-            main_content = page.query_selector("main, #content, .main-content, article")
-            if main_content and main_content.is_visible():
-                report.add_assertion("Content", "Main content area is present", "Passed")
-            
-            # 6. Form Check
-            forms = page.query_selector_all("form")
-            for form in forms[:2]:  # Check first 2 forms
-                try:
-                    if form.is_visible():
-                        inputs = form.query_selector_all("input:not([type='hidden'])")
-                        if len(inputs) > 0:
-                            report.add_assertion("Form", f"Form with {len(inputs)} visible inputs is accessible", "Passed")
-                        else:
-                            report.add_assertion("Form", "Form has no visible inputs", "Failed")
-                except Exception as e:
-                    report.add_assertion("Form", "Form validation failed", "Failed", e)
-                    
-        except Exception as e:
-            report.add_assertion("Page", "Failed to perform page checks", "Failed", e)
-            
     def _smart_interaction(self, page, element, report):
         try:
+            # Get the current URL before interaction
+            current_url = page.url
+            
             # Extract element information
             tag_name = element.evaluate('el => el.tagName').lower()
             element_type = element.evaluate('el => el.type')
@@ -756,3 +791,30 @@ class AutomatedTester:
         except Exception as e:
             report.add_assertion("Interaction", f"Failed to interact with {tag_name} element", "Failed", e)
             print(f"Error during smart interaction: {str(e)}")
+            
+    def _perform_page_checks(self, page, report):
+        try:
+            # Get current URL
+            current_url = page.url
+            
+            # Basic page load check
+            report.add_assertion("Page Load", f"Page loaded successfully: {current_url}", "Passed", url=current_url)
+            
+            # Check for main content
+            main_content = page.locator("main").first
+            if main_content.is_visible():
+                report.add_assertion("Content", "Main content is visible", "Passed", url=current_url)
+            else:
+                report.add_assertion("Content", "Main content not found", "Failed", url=current_url)
+            
+            # Check for navigation
+            nav = page.locator("nav").first
+            if nav.is_visible():
+                report.add_assertion("Navigation", "Navigation menu is present", "Passed", url=current_url)
+            else:
+                report.add_assertion("Navigation", "Navigation menu not found", "Failed", url=current_url)
+            
+            return True
+        except Exception as e:
+            report.add_assertion("Page Check", "Failed to perform page checks", "Failed", error=str(e), url=current_url)
+            return False
