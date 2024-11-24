@@ -78,6 +78,27 @@ The repository runs autonomous tests nightly at 00:00 UTC using GitHub Actions. 
 2. Select "Nightly Autonomous Tests"
 3. Click "Run workflow"
 
+## Test Reports
+
+The automated test reports are available in two locations:
+
+1. **GitHub Pages (Latest Report)**
+   - Visit [https://tamaltanudatta.github.io/LM_Autonomous_Testing_Bot/](https://tamaltanudatta.github.io/LM_Autonomous_Testing_Bot/)
+   - This page is automatically updated after each test run
+
+2. **GitHub Actions Artifacts**
+   - Go to the [Actions tab](https://github.com/TamalTanuDatta/LM_Autonomous_Testing_Bot/actions)
+   - Click on any workflow run
+   - Scroll to the "Artifacts" section
+   - Download the "test-report" artifact
+
+Reports include:
+- Test execution timeline
+- Successful and failed actions
+- Screenshots of failures (if any)
+- Interaction statistics
+- Coverage metrics
+
 ## Components
 
 ### InteractionRecorder
