@@ -5,9 +5,17 @@ on:
     - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
   workflow_dispatch:  # Allows manual trigger
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   run-autonomous-tests:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - uses: actions/checkout@v3
@@ -33,19 +41,23 @@ jobs:
         mkdir -p reports
         python3 -m src.bot.autonomous_lm_test_2_min
       env:
-        PLAYWRIGHT_HEADLESS: "true"  # Run in headless mode for CI
+        PLAYWRIGHT_HEADLESS: "true"
         
     - name: Upload test report
       uses: actions/upload-artifact@v3
       with:
         name: test-report
         path: reports/*.html
-        retention-days: 14  # Keep reports for 2 weeks
+        retention-days: 14
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+        
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './reports'
         
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./reports
-        keep_files: false  # Don't keep old reports
-        enable_jekyll: false
+      id: deployment
+      uses: actions/deploy-pages@v2
