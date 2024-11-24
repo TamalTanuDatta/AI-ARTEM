@@ -317,36 +317,27 @@ class TestReport:
         """
         
         template = Template(html_template)
-        report_html = template.render(
+        html_content = template.render(
             start_time=self.start_time.strftime("%Y-%m-%d %H:%M:%S"),
             end_time=self.end_time.strftime("%Y-%m-%d %H:%M:%S"),
-            duration=round(duration, 2),
+            duration=f"{duration:.2f}",
             total_actions=self.total_actions,
             successful_actions=self.successful_actions,
             failed_actions=self.failed_actions,
-            steps=self.test_steps,
-            assertions=self.assertions,
-            visited_urls=sorted(list(self.visited_urls))
+            visited_urls=len(self.visited_urls),
+            test_steps=self.test_steps,
+            assertions=self.assertions
         )
         
         # Create reports directory if it doesn't exist
-        os.makedirs("reports", exist_ok=True)
+        os.makedirs('reports', exist_ok=True)
         
-        # Delete old reports
-        old_reports = glob.glob("reports/leasingmarkt_test_report_*.html")
-        for report in old_reports:
-            try:
-                os.remove(report)
-                print(f"Deleted old report: {report}")
-            except Exception as e:
-                print(f"Warning: Could not delete old report {report}: {str(e)}")
-        
-        # Generate unique filename with timestamp
-        filename = f"reports/leasingmarkt_test_report_{self.start_time.strftime('%Y%m%d_%H%M%S')}.html"
-        with open(filename, "w") as f:
-            f.write(report_html)
+        # Save as index.html for GitHub Pages
+        report_path = os.path.join('reports', 'index.html')
+        with open(report_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
             
-        return filename
+        return report_path
 
 class AutomatedTester:
     def __init__(self, model_path, interactions_path):
