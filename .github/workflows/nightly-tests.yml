@@ -1,0 +1,50 @@
+name: Nightly Autonomous Tests
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  run-autonomous-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Install Playwright browsers
+      run: |
+        python -m playwright install chromium
+        python -m playwright install-deps
+        
+    - name: Run autonomous tests
+      run: |
+        mkdir -p reports
+        python3 -m src.bot.autonomous_lm_test_2_min
+      env:
+        PLAYWRIGHT_HEADLESS: "true"  # Run in headless mode for CI
+        
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: reports/*.html
+        retention-days: 14  # Keep reports for 2 weeks
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./reports
+        keep_files: false  # Don't keep old reports
+        enable_jekyll: false

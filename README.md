@@ -61,6 +61,23 @@ The autonomous testing bot:
 - Performs assertions on page content and functionality
 - Generates comprehensive test reports with details of all actions and validations
 
+## Nightly Automated Tests
+
+The repository runs autonomous tests nightly at 00:00 UTC using GitHub Actions. Test reports are:
+- Generated as HTML files
+- Published to GitHub Pages
+- Available as downloadable artifacts
+- Kept for 14 days
+
+### Viewing Test Reports
+- Latest report: Visit `https://TamalTanuDatta.github.io/LM_Autonomous_Testing_Bot/`
+- Historical reports: Download from GitHub Actions workflow runs
+
+### Manual Trigger
+1. Go to Actions tab
+2. Select "Nightly Autonomous Tests"
+3. Click "Run workflow"
+
 ## Components
 
 ### InteractionRecorder
