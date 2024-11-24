@@ -395,7 +395,9 @@ class AutomatedTester:
         
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=False)
+                # Check for headless mode from environment variable
+                headless = os.getenv('PLAYWRIGHT_HEADLESS', 'false').lower() == 'true'
+                browser = p.chromium.launch(headless=headless)
                 context = browser.new_context()
                 page = context.new_page()
                 
