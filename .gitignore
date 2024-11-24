@@ -33,6 +33,7 @@ ENV/
 
 # Project specific
 *.joblib
-recorded_interactions.json
+!interaction_model.joblib
 reports/
 *.log
+!recorded_interactions.json
