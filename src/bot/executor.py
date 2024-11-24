@@ -94,223 +94,110 @@ class TestReport:
                     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
                 }
                 
-                .header h1 {
-                    margin: 0;
-                    color: var(--accent-color);
-                    font-size: 2.5em;
-                    margin-bottom: 10px;
-                }
-                
-                .header p {
-                    margin: 5px 0;
-                    color: var(--text-secondary);
-                }
-                
-                .summary {
+                .metrics {
                     display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
                     gap: 20px;
                     margin-bottom: 30px;
                 }
                 
-                .summary-box {
+                .metric-card {
                     background-color: var(--bg-secondary);
                     padding: 20px;
                     border-radius: var(--border-radius);
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                    transition: transform 0.2s;
+                    text-align: center;
                 }
                 
-                .summary-box:hover {
-                    transform: translateY(-2px);
-                }
-                
-                .summary-box h3 {
-                    margin: 0;
-                    color: var(--accent-color);
-                    font-size: 1.2em;
-                    margin-bottom: 10px;
-                }
-                
-                .summary-box p {
-                    margin: 0;
+                .metric-value {
                     font-size: 2em;
                     font-weight: bold;
-                }
-                
-                .steps, .assertions, .visited-urls {
-                    background-color: var(--bg-secondary);
-                    padding: 20px;
-                    border-radius: var(--border-radius);
-                    margin-bottom: 30px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                }
-                
-                h2 {
                     color: var(--accent-color);
-                    margin-top: 0;
-                    margin-bottom: 20px;
-                    border-bottom: 2px solid var(--accent-color);
-                    padding-bottom: 10px;
                 }
                 
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-top: 10px;
+                .steps-container {
+                    background-color: var(--bg-secondary);
+                    padding: 30px;
+                    border-radius: var(--border-radius);
+                }
+                
+                .step {
+                    margin-bottom: 15px;
+                    padding: 15px;
                     background-color: var(--bg-primary);
                     border-radius: var(--border-radius);
-                    overflow: hidden;
                 }
                 
-                th, td {
-                    padding: 15px;
-                    text-align: left;
-                    border-bottom: 1px solid var(--bg-secondary);
+                .step.success {
+                    border-left: 4px solid var(--success-color);
                 }
                 
-                th {
-                    background-color: var(--bg-secondary);
-                    color: var(--accent-color);
-                    font-weight: 600;
-                }
-                
-                tr:hover {
-                    background-color: rgba(76, 175, 80, 0.1);
-                }
-                
-                .success {
-                    color: var(--success-color);
-                }
-                
-                .error {
-                    color: var(--error-color);
+                .step.error {
+                    border-left: 4px solid var(--error-color);
                 }
                 
                 .timestamp {
                     color: var(--text-secondary);
                     font-size: 0.9em;
                 }
-                
-                .visited-urls ul {
-                    list-style-type: none;
-                    padding: 0;
-                    margin: 0;
-                }
-                
-                .visited-urls li {
-                    padding: 10px;
-                    border-bottom: 1px solid var(--bg-primary);
-                }
-                
-                .visited-urls li:last-child {
-                    border-bottom: none;
-                }
-                
-                .visited-urls li:hover {
-                    background-color: rgba(76, 175, 80, 0.1);
-                }
-                
-                @media (max-width: 768px) {
-                    .summary {
-                        grid-template-columns: 1fr;
-                    }
-                    
-                    body {
-                        padding: 10px;
-                    }
-                    
-                    .header {
-                        padding: 20px;
-                    }
-                }
             </style>
         </head>
         <body>
             <div class="header">
                 <h1>Leasingmarkt Autonomous Test Report</h1>
-                <p>Test executed from {{ start_time }} to {{ end_time }}</p>
-                <p>Total Duration: {{ duration }} seconds</p>
+                <p>Start Time: {{ start_time }}</p>
+                <p>End Time: {{ end_time }}</p>
+                <p>Duration: {{ duration }} seconds</p>
             </div>
             
-            <div class="summary">
-                <div class="summary-box">
-                    <h3>Total Actions</h3>
-                    <p>{{ total_actions }}</p>
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value">{{ total_actions }}</div>
+                    <div>Total Actions</div>
                 </div>
-                <div class="summary-box">
-                    <h3>Successful Actions</h3>
-                    <p class="success">{{ successful_actions }}</p>
+                <div class="metric-card">
+                    <div class="metric-value">{{ successful_actions }}</div>
+                    <div>Successful Actions</div>
                 </div>
-                <div class="summary-box">
-                    <h3>Failed Actions</h3>
-                    <p class="error">{{ failed_actions }}</p>
+                <div class="metric-card">
+                    <div class="metric-value">{{ failed_actions }}</div>
+                    <div>Failed Actions</div>
                 </div>
-                <div class="summary-box">
-                    <h3>Total Assertions</h3>
-                    <p>{{ assertions.passed + assertions.failed }}</p>
+                <div class="metric-card">
+                    <div class="metric-value">{{ visited_urls }}</div>
+                    <div>Pages Visited</div>
                 </div>
-                <div class="summary-box">
-                    <h3>Passed Assertions</h3>
-                    <p class="success">{{ assertions.passed }}</p>
+                <div class="metric-card">
+                    <div class="metric-value">{{ assertions.passed }}</div>
+                    <div>Assertions Passed</div>
                 </div>
-                <div class="summary-box">
-                    <h3>Failed Assertions</h3>
-                    <p class="error">{{ assertions.failed }}</p>
+                <div class="metric-card">
+                    <div class="metric-value">{{ assertions.failed }}</div>
+                    <div>Assertions Failed</div>
                 </div>
             </div>
             
-            <div class="steps">
+            <div class="steps-container">
                 <h2>Test Steps</h2>
-                <table>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Action Type</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Error</th>
-                    </tr>
-                    {% for step in steps %}
-                    <tr>
-                        <td class="timestamp">{{ step.timestamp }}</td>
-                        <td>{{ step.action_type }}</td>
-                        <td>{{ step.description }}</td>
-                        <td class="{{ 'success' if step.status == 'Success' else 'error' }}">{{ step.status }}</td>
-                        <td class="error">{{ step.error if step.error else '' }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-            
-            <div class="assertions">
+                {% for step in test_steps %}
+                <div class="step {{ 'success' if step.status == 'Success' else 'error' }}">
+                    <div class="timestamp">{{ step.timestamp }}</div>
+                    <div><strong>{{ step.action_type }}</strong>: {{ step.description }}</div>
+                    {% if step.error %}
+                    <div style="color: var(--error-color)">Error: {{ step.error }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
                 <h2>Assertions</h2>
-                <table>
-                    <tr>
-                        <th>Timestamp</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Status</th>
-                        <th>Error</th>
-                    </tr>
-                    {% for assertion in assertions.details %}
-                    <tr>
-                        <td class="timestamp">{{ assertion.timestamp }}</td>
-                        <td>{{ assertion.type }}</td>
-                        <td>{{ assertion.description }}</td>
-                        <td class="{{ 'success' if assertion.status == 'Passed' else 'error' }}">{{ assertion.status }}</td>
-                        <td class="error">{{ assertion.error if assertion.error else '' }}</td>
-                    </tr>
-                    {% endfor %}
-                </table>
-            </div>
-            
-            <div class="visited-urls">
-                <h2>Visited URLs</h2>
-                <ul>
-                    {% for url in visited_urls %}
-                    <li>{{ url }}</li>
-                    {% endfor %}
-                </ul>
+                {% for assertion in assertions.details %}
+                <div class="step {{ 'success' if assertion.status == 'Passed' else 'error' }}">
+                    <div class="timestamp">{{ assertion.timestamp }}</div>
+                    <div><strong>{{ assertion.type }}</strong>: {{ assertion.description }}</div>
+                    {% if assertion.error %}
+                    <div style="color: var(--error-color)">Error: {{ assertion.error }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
             </div>
         </body>
         </html>
@@ -357,7 +244,7 @@ class AutomatedTester:
         self.base_url = None
         self.checked_links = set()
         
-    async def validate_link(self, page, url):
+    def validate_link(self, page, url):
         try:
             if url in self.checked_links:
                 return True
@@ -366,10 +253,13 @@ class AutomatedTester:
             if self.base_url and not url.startswith(self.base_url):
                 return True
                 
-            response = await page.request.head(url)
-            is_valid = response.status < 400
-            self.checked_links.add(url)
-            return is_valid
+            try:
+                response = page.request.head(url)
+                is_valid = response.status < 400
+                self.checked_links.add(url)
+                return is_valid
+            except Exception:
+                return False
         except Exception:
             return False
             
@@ -507,9 +397,10 @@ class AutomatedTester:
                 try:
                     if form.is_visible():
                         inputs = form.query_selector_all("input:not([type='hidden'])")
-                        visible_inputs = [input_field for input_field in inputs if input_field.is_visible()]
-                        if visible_inputs:
-                            report.add_assertion("Form", f"Form and its inputs are accessible", "Passed")
+                        if len(inputs) > 0:
+                            report.add_assertion("Form", f"Form with {len(inputs)} visible inputs is accessible", "Passed")
+                        else:
+                            report.add_assertion("Form", "Form has no visible inputs", "Failed")
                 except Exception as e:
                     report.add_assertion("Form", "Form validation failed", "Failed", e)
                     
