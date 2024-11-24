@@ -60,6 +60,36 @@ class TestReport:
         self.end_time = datetime.now()
         duration = (self.end_time - self.start_time).total_seconds()
         
+        # Generate summary analysis
+        successful_interactions = [step for step in self.test_steps if step.get('status') == 'Success']
+        failed_interactions = [step for step in self.test_steps if step.get('status') != 'Success']
+        
+        # Group interactions by type
+        interaction_types = {}
+        for step in successful_interactions:
+            action_type = step.get('action_type', 'Unknown')
+            if action_type not in interaction_types:
+                interaction_types[action_type] = []
+            interaction_types[action_type].append(step.get('description'))
+        
+        # Analyze errors
+        error_analysis = {}
+        for step in failed_interactions:
+            error_msg = step.get('error', 'Unknown error')
+            if 'outside of the viewport' in error_msg:
+                error_type = 'Viewport Error'
+            elif 'timeout' in error_msg.lower():
+                error_type = 'Timeout Error'
+            else:
+                error_type = 'Other Error'
+            
+            if error_type not in error_analysis:
+                error_analysis[error_type] = []
+            error_analysis[error_type].append({
+                'element': step.get('description'),
+                'error': error_msg
+            })
+        
         html_template = """
         <!DOCTYPE html>
         <html>
@@ -242,6 +272,86 @@ class TestReport:
                     transition: width 0.5s ease-in-out;
                 }
                 
+                .summary-section {
+                    background-color: var(--bg-secondary);
+                    padding: 30px;
+                    border-radius: var(--border-radius);
+                    margin-bottom: 30px;
+                    box-shadow: var(--shadow);
+                }
+                
+                .summary-section h2 {
+                    color: var(--accent-color);
+                    margin-top: 0;
+                    margin-bottom: 20px;
+                    padding-bottom: 10px;
+                    border-bottom: 2px solid var(--accent-color);
+                }
+                
+                .summary-content {
+                    background-color: var(--bg-primary);
+                    padding: 20px;
+                    border-radius: var(--border-radius);
+                    margin-bottom: 20px;
+                }
+                
+                .interaction-type {
+                    margin-bottom: 15px;
+                }
+                
+                .interaction-type h3 {
+                    color: var(--accent-color);
+                    margin-bottom: 10px;
+                }
+                
+                .interaction-list {
+                    list-style-type: none;
+                    padding-left: 20px;
+                    margin: 0;
+                }
+                
+                .interaction-list li {
+                    margin-bottom: 5px;
+                    position: relative;
+                }
+                
+                .interaction-list li:before {
+                    content: "•";
+                    color: var(--accent-color);
+                    position: absolute;
+                    left: -15px;
+                }
+                
+                .error-analysis {
+                    margin-top: 20px;
+                }
+                
+                .error-type {
+                    margin-bottom: 15px;
+                }
+                
+                .error-type h3 {
+                    color: var(--error-color);
+                    margin-bottom: 10px;
+                }
+                
+                .error-list {
+                    list-style-type: none;
+                    padding-left: 20px;
+                    margin: 0;
+                }
+                
+                .error-list li {
+                    margin-bottom: 10px;
+                    position: relative;
+                }
+                
+                .error-list li:before {
+                    content: "❌";
+                    position: absolute;
+                    left: -20px;
+                }
+                
                 @media (max-width: 768px) {
                     body {
                         padding: 10px;
@@ -304,6 +414,48 @@ class TestReport:
                     </div>
                 </div>
                 
+                <div class="summary-section">
+                    <h2>📊 Test Summary Analysis</h2>
+                    <div class="summary-content">
+                        <p>The bot ran for {{ duration }} seconds and performed {{ total_actions }} actions.</p>
+                        
+                        <div class="interaction-type">
+                            <h3>🎯 Successful Interactions</h3>
+                            <ul class="interaction-list">
+                            {% for type, interactions in interaction_types.items() %}
+                                <li>
+                                    <strong>{{ type }}:</strong>
+                                    <ul class="interaction-list">
+                                    {% for interaction in interactions %}
+                                        <li>{{ interaction }}</li>
+                                    {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endfor %}
+                            </ul>
+                        </div>
+                        
+                        {% if error_analysis %}
+                        <div class="error-analysis">
+                            <h3>❌ Error Analysis</h3>
+                            {% for error_type, errors in error_analysis.items() %}
+                            <div class="error-type">
+                                <h4>{{ error_type }} ({{ errors|length }})</h4>
+                                <ul class="error-list">
+                                {% for error in errors %}
+                                    <li>
+                                        <strong>{{ error.element }}</strong>
+                                        <div class="error-message">{{ error.error }}</div>
+                                    </li>
+                                {% endfor %}
+                                </ul>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
                 <div class="steps-container">
                     <h2>🔍 Test Steps</h2>
                     {% for step in test_steps %}
@@ -348,7 +500,9 @@ class TestReport:
             failed_actions=self.failed_actions,
             visited_urls=len(self.visited_urls),
             test_steps=self.test_steps,
-            assertions=self.assertions
+            assertions=self.assertions,
+            interaction_types=interaction_types,
+            error_analysis=error_analysis
         )
         
         # Create reports directory if it doesn't exist
