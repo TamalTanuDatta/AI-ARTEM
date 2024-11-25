@@ -1,0 +1,57 @@
+name: Notify Slack on Report Update
+
+on:
+  push:
+    branches:
+      - main  # or your default branch
+    paths:
+      - 'reports/index.html'  # Only trigger when the report is updated
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚀 New Test Report Available!"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Test Report Update*\nA new test report has been published to GitHub Pages."
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "📊 *View Report:* ${{ format('https://{0}.github.io/{1}/reports/index.html', github.repository_owner, github.event.repository.name) }}"
+                  }
+                },
+                {
+                  "type": "context",
+                  "elements": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "🔍 *Commit:* ${{ github.event.head_commit.message }}\n👤 *Author:* ${{ github.event.head_commit.author.name }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
