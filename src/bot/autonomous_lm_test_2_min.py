@@ -5,7 +5,9 @@ def main():
     # Configuration
     github_url = os.getenv('GITHUB_PAGES_URL')  # e.g., "https://username.github.io/repo/reports/index.html"
     
-    tester = AutomatedTester('interaction_model.joblib', 'recorded_interactions.json')
+    # Use the new hybrid model path
+    model_path = 'models/hybrid_model.joblib'
+    tester = AutomatedTester(model_path, 'recorded_interactions.json')
     report = tester.run_tests('https://www.leasingmarkt.de', duration=120)
     
     # Generate report

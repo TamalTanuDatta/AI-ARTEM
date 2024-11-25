@@ -1,50 +1,70 @@
 import json
+import os
+from src.bot.hybrid_learner import HybridInteractionLearner
 from src.bot.recorder import InteractionRecorder
-from src.bot.learner import InteractionLearner
 
-def main():
-    # Configuration
-    URL = "https://www.leasingmarkt.de"
-    RECORDING_FILE = "src/bot/recorded_interactions.json"
-    MODEL_FILE = "src/bot/interaction_model.joblib"
-    RECORDING_DURATION = 120  # 2 minutes of recording time
+# Constants
+MODEL_FILE = 'models/hybrid_model.joblib'
+INTERACTIONS_FILE = 'recorded_interactions.json'
+
+def record_interactions(url, duration=300):
+    """Record user interactions on a website."""
+    recorder = InteractionRecorder()
     
     try:
-        # Step 1: Record user interactions
-        print(f"\nWill record interactions for: {URL}")
-        recorder = InteractionRecorder()
-        recorder.start_recording(URL, duration=RECORDING_DURATION)
+        print(f"\nStarting interaction recording at {url}")
+        print(f"Recording will run for {duration} seconds")
+        print("Please interact with the website naturally...")
+        
+        interactions = recorder.record(url, duration)
         
         # Save recorded interactions
-        print(f"\nSaving recorded interactions to {RECORDING_FILE}...")
-        recorder.save_interactions(RECORDING_FILE)
-        print("Interactions saved successfully!")
-        
-        # Step 2: Train the model
-        print("\nPreparing to train model...")
-        with open(RECORDING_FILE, 'r') as f:
-            interactions = json.load(f)
+        with open(INTERACTIONS_FILE, 'w') as f:
+            json.dump(interactions, f, indent=2)
             
-        if not interactions:
-            print("No interactions were recorded. Please try again.")
-            return
-            
-        print(f"Loaded {len(interactions)} recorded interactions.")
+        print(f"\nRecorded {len(interactions)} interactions")
+        print(f"Interactions saved to {INTERACTIONS_FILE}")
         
-        # Train and save the model
-        learner = InteractionLearner()
+        return interactions
+        
+    except Exception as e:
+        print(f"Error during recording: {str(e)}")
+        return None
+
+def train_model(interactions):
+    """Train the model on recorded interactions."""
+    try:
+        learner = HybridInteractionLearner()
         features, labels = learner.prepare_data(interactions)
         learner.train(features, labels)
         
-        print(f"\nSaving trained model to {MODEL_FILE}...")
+        # Create models directory if it doesn't exist
+        os.makedirs(os.path.dirname(MODEL_FILE), exist_ok=True)
         learner.save_model(MODEL_FILE)
-        print("Model saved successfully!")
         
-        print("\nRecording and training completed! You can now use the trained model for testing.")
+        print(f"\nModel saved to {MODEL_FILE}")
+        return True
         
     except Exception as e:
-        print(f"\nAn error occurred: {str(e)}")
-        print("Please try again. If the error persists, check your internet connection.")
+        print(f"Error during training: {str(e)}")
+        return False
+
+def main():
+    # Record interactions
+    url = input("\nEnter the URL to record interactions from: ")
+    duration = int(input("Enter recording duration in seconds (default: 300): ") or "300")
+    
+    interactions = record_interactions(url, duration)
+    
+    if interactions:
+        # Train model
+        print("\nTraining model on recorded interactions...")
+        if train_model(interactions):
+            print("\nProcess completed successfully!")
+        else:
+            print("\nFailed to train model.")
+    else:
+        print("\nNo interactions recorded. Process aborted.")
 
 if __name__ == "__main__":
     main()

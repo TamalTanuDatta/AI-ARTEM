@@ -1,21 +1,24 @@
-# Autonomous Testing Bot
+# Interaction Recorder Bot
 
-This project implements an autonomous testing bot that learns from user interactions and performs automated testing using machine learning and Playwright.
+An automated testing bot that learns from human interactions to perform intelligent website testing.
 
-## Architecture Overview
+## Features
 
-The system consists of three main components:
+- **Interaction Recording**: Records real user interactions with a website using Playwright
+- **Advanced ML Model**: Uses a hybrid machine learning approach combining:
+  - Random Forest for robust feature learning
+  - Neural Network for complex pattern recognition
+  - Automatic hyperparameter optimization
+- **Automated Testing**: Replays and validates learned interactions
+- **HTML Reports**: Generates detailed test reports with GitHub Pages integration
+- **Slack Integration**: Automatically notifies about test results via GitHub Actions
 
-1. **Interaction Recorder**: Records user interactions with the website
-2. **Interaction Learner**: Trains a machine learning model on recorded interactions
-3. **Automated Tester**: Executes automated tests based on learned patterns
+## Installation
 
-## Setup Instructions
-
-1. Create a virtual environment:
+1. Clone the repository:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+git clone https://github.com/yourusername/Interaction_recorder_bot.git
+cd Interaction_recorder_bot
 ```
 
 2. Install dependencies:
@@ -30,93 +33,109 @@ playwright install
 
 ## Usage
 
-1. Run the main script:
-```bash
-python src/bot/main.py
-```
+### Recording Interactions
 
-2. The system will:
-   - Record your interactions with the website
-   - Train a model based on your interactions
-   - Execute automated tests using the learned patterns
-
-## How to Run Tests
-
-You can run the autonomous testing bot for 2 minutes with this command:
+Record user interactions with a website:
 
 ```bash
-python3 -m src.bot.autonomous_lm_test_2_min
+python -m src.bot.main
 ```
 
-### Test Reports
-- The test results will be saved as an HTML file in the `reports` directory
-- Each time you run the tests, the previous report will be automatically deleted to maintain cleanliness
-- The bot performs various assertions during test execution to validate website behavior and functionality
+Follow the prompts to:
+1. Enter the target website URL
+2. Specify recording duration
+3. Interact with the website naturally
 
-### What the Bot Tests
-The autonomous testing bot:
-- Navigates through the website
-- Interacts with various UI elements
-- Validates links and page responses
-- Performs assertions on page content and functionality
-- Generates comprehensive test reports with details of all actions and validations
+The interactions will be saved to `recorded_interactions.json`.
 
-## Nightly Automated Tests
+### Training the Model
 
-The repository runs autonomous tests nightly at 00:00 UTC using GitHub Actions. Test reports are:
-- Generated as HTML files
-- Published to GitHub Pages
-- Available as downloadable artifacts
-- Kept for 14 days
+Train the hybrid model on recorded interactions:
 
-### Viewing Test Reports
-- Latest report: Visit `https://TamalTanuDatta.github.io/LM_Autonomous_Testing_Bot/`
-- Historical reports: Download from GitHub Actions workflow runs
+```bash
+python -m src.bot.train_model
+```
 
-### Manual Trigger
-1. Go to Actions tab
-2. Select "Nightly Autonomous Tests"
-3. Click "Run workflow"
+This will:
+1. Load recorded interactions
+2. Extract and process features
+3. Optimize model hyperparameters
+4. Train both Random Forest and Neural Network models
+5. Save the hybrid model to `models/hybrid_model.joblib`
 
-## Test Reports
+### Running Tests
 
-The automated test reports are available in two locations:
+Run automated tests using the trained model:
 
-1. **GitHub Pages (Latest Report)**
-   - Visit [https://tamaltanudatta.github.io/LM_Autonomous_Testing_Bot/](https://tamaltanudatta.github.io/LM_Autonomous_Testing_Bot/)
-   - This page is automatically updated after each test run
+```bash
+python -m src.bot.autonomous_lm_test_2_min
+```
 
-2. **GitHub Actions Artifacts**
-   - Go to the [Actions tab](https://github.com/TamalTanuDatta/LM_Autonomous_Testing_Bot/actions)
-   - Click on any workflow run
-   - Scroll to the "Artifacts" section
-   - Download the "test-report" artifact
+The test will:
+1. Load the hybrid model
+2. Navigate to the target website
+3. Perform intelligent interactions based on learned patterns
+4. Generate a detailed HTML report
+5. Push the report to GitHub Pages
+6. Send a notification to Slack (if configured)
 
-Reports include:
-- Test execution timeline
-- Successful and failed actions
-- Screenshots of failures (if any)
-- Interaction statistics
-- Coverage metrics
+## Model Architecture
 
-## Components
+The hybrid model combines two approaches:
 
-### InteractionRecorder
-- Records user clicks, inputs, and navigation
-- Saves interaction data in JSON format
+1. **Random Forest Classifier**
+   - Handles categorical features
+   - Robust to missing data
+   - Provides feature importance analysis
 
-### InteractionLearner
-- Processes recorded interactions
-- Trains a Random Forest model
-- Converts interaction patterns into features
+2. **Neural Network**
+   - Learns complex interaction patterns
+   - Better at temporal dependencies
+   - Uses dropout for regularization
 
-### AutomatedTester
-- Loads trained model
-- Analyzes webpage elements
-- Executes predicted actions
+The predictions are combined using a weighted ensemble approach:
+- 60% weight to Random Forest predictions
+- 40% weight to Neural Network predictions
 
-## Customization
+## Configuration
 
-- Modify feature extraction in both learner and executor
-- Adjust sleep timings for different websites
-- Add more interaction types as needed
+### GitHub Pages and Slack Integration
+
+1. Enable GitHub Pages in your repository settings
+2. Add a Slack webhook URL to repository secrets:
+   - Go to Settings → Secrets and variables → Actions
+   - Add `SLACK_WEBHOOK_URL` secret
+
+### Environment Variables
+
+- `GITHUB_PAGES_URL`: URL where test reports are published
+- `SLACK_WEBHOOK_URL`: Webhook URL for Slack notifications
+
+## Directory Structure
+
+```
+Interaction_recorder_bot/
+├── src/
+│   └── bot/
+│       ├── hybrid_learner.py    # Hybrid ML model implementation
+│       ├── executor.py          # Test execution engine
+│       ├── recorder.py          # Interaction recorder
+│       ├── train_model.py       # Model training script
+│       └── main.py             # Main recording script
+├── models/                     # Trained model storage
+├── reports/                    # Generated test reports
+├── requirements.txt           # Project dependencies
+└── README.md                 # This file
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

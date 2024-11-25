@@ -608,9 +608,15 @@ class TestReport:
 class AutomatedTester:
     def __init__(self, model_path, interactions_path):
         # Load the trained model
-        model_data = joblib.load(model_path)
-        self.model = model_data['model']
-        self.label_encoder = model_data['encoder']
+        print(f"\nLoading model from {model_path}...")
+        try:
+            from src.bot.hybrid_learner import HybridInteractionLearner
+            self.learner = HybridInteractionLearner()
+            self.learner.load_model(model_path)
+            print("Model loaded successfully!")
+        except Exception as e:
+            print(f"Error loading model: {str(e)}")
+            raise
         
         # Load recorded interactions for reference
         with open(interactions_path, 'r') as f:
