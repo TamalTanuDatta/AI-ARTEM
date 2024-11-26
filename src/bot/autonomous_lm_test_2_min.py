@@ -1,21 +1,23 @@
 import os
+import argparse
 from src.bot.executor import AutomatedTester
 
 def main():
-    # Configuration
-    github_url = os.getenv('GITHUB_PAGES_URL')  # e.g., "https://username.github.io/repo/reports/index.html"
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Run autonomous tests')
+    parser.add_argument('--duration', type=int, default=120,
+                      help='Test duration in seconds (default: 120)')
+    parser.add_argument('--url', type=str, default='https://www.leasingmarkt.de',
+                      help='Target website URL')
+    args = parser.parse_args()
     
-    # Use the new hybrid model path
+    # Use the hybrid model path
     model_path = 'models/hybrid_model.joblib'
     tester = AutomatedTester(model_path, 'recorded_interactions.json')
-    report = tester.run_tests('https://www.leasingmarkt.de', duration=120)
+    report = tester.run_tests(args.url, duration=args.duration)
     
-    # Generate report
     if report:
         report.generate_html_report()
-        if github_url:
-            print("\nNote: To enable report publishing, set these environment variables:")
-            print("- GITHUB_PAGES_URL: URL where the report will be published")
 
 if __name__ == "__main__":
     main()

@@ -1,63 +1,58 @@
-name: Nightly Autonomous Tests
+name: Autonomous Tests
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
-  workflow_dispatch:  # Allows manual trigger
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+  workflow_dispatch:
+    inputs:
+      test_duration:
+        description: 'Test duration in seconds'
+        required: true
+        default: '120'
+        type: string
+      target_url:
+        description: 'Target website URL'
+        required: true
+        default: 'https://www.leasingmarkt.de'
+        type: string
 
 jobs:
-  run-autonomous-tests:
+  test:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
+    permissions:
+      contents: write
+      pages: write
+
     steps:
     - uses: actions/checkout@v3
-    
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-        
+
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip wheel setuptools
-        pip install --upgrade pip setuptools wheel
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        
-    - name: Install Playwright browsers
-      run: |
         python -m playwright install chromium
         python -m playwright install-deps
-        
+
     - name: Run autonomous tests
       run: |
         mkdir -p reports
-        python3 -m src.bot.autonomous_lm_test_2_min
+        python3 -m src.bot.autonomous_lm_test_2_min --duration ${{ github.event.inputs.test_duration }} --url ${{ github.event.inputs.target_url }}
       env:
         PLAYWRIGHT_HEADLESS: "true"
-        
-    - name: Setup Pages
-      uses: actions/configure-pages@v3
-      
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v2
-      with:
-        path: reports
-        
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v2
-      
-    - name: Upload test report artifact
+
+    - name: Upload test report
       uses: actions/upload-artifact@v3
       with:
         name: test-report
         path: reports/*.html
         retention-days: 14
+
+    - name: Deploy to GitHub Pages
+      uses: actions/deploy-pages@v2
+      id: deployment
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./reports
