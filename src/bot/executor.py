@@ -630,24 +630,25 @@ class AutomatedTester:
         self.checked_links = set()
         
     def validate_link(self, page, url):
+        """Validate a URL with security checks."""
         try:
-            if url in self.checked_links:
-                return True
-                
-            # Only check links from the same domain
-            if self.base_url and not url.startswith(self.base_url):
-                return True
-                
-            try:
-                response = page.request.head(url)
-                is_valid = response.status < 400
-                self.checked_links.add(url)
-                return is_valid
-            except Exception:
+            parsed = urlparse(url)
+            # Security checks
+            if not parsed.scheme in ['http', 'https']:
                 return False
+            if not parsed.netloc:
+                return False
+            if self.base_url and parsed.netloc != urlparse(self.base_url).netloc:
+                return False
+            # Check for potential security risks
+            risky_patterns = [
+                'file://', 'data:', 'javascript:', 'vbscript:',
+                'admin', 'login', 'logout', 'delete', 'remove'
+            ]
+            return not any(pattern in url.lower() for pattern in risky_patterns)
         except Exception:
             return False
-            
+
     def run_tests(self, url, duration=300):  # 5 minutes of testing by default
         print(f"\nStarting automated exploratory testing on {url}")
         print(f"Will run tests for {duration} seconds")
@@ -735,69 +736,37 @@ class AutomatedTester:
         print(f"\nTest report generated: {report_path}")
             
     def _smart_interaction(self, page, element, report):
+        """Perform smart interaction with security checks."""
         try:
-            # Get the current URL before interaction
-            current_url = page.url
+            # Security check for element
+            if not element.is_visible() or not element.is_enabled():
+                return False
+
+            # Get element properties safely
+            tag_name = element.evaluate('element => element.tagName.toLowerCase()')
+            element_type = element.get_attribute('type')
             
-            # Extract element information
-            tag_name = element.evaluate('el => el.tagName').lower()
-            element_type = element.evaluate('el => el.type')
-            
-            # Check if element is interactive
-            if not (element.is_visible() and element.is_enabled()):
-                report.add_assertion("Element", f"Element {tag_name} is not interactive", "Failed")
-                return
-            
-            report.add_assertion("Element", f"Element {tag_name} is interactive", "Passed")
-            
-            # Get element text and attributes for logging
-            element_text = element.evaluate('el => el.textContent')
-            element_html = element.evaluate('el => el.outerHTML')
-            
-            print(f"\nInteracting with {tag_name} element: {element_text[:50]}...")
-            
+            # Validate input types
             if tag_name == 'input':
-                if element_type in ['text', 'email', 'search']:
-                    test_inputs = ['Test', 'test@example.com', 'Search term']
-                    input_value = random.choice(test_inputs)
-                    element.fill(input_value)
-                    report.add_assertion("Input", f"Input value set: {input_value}", "Passed")
-                    
-                elif element_type == 'checkbox':
-                    element.check()
-                    report.add_assertion("Checkbox", "Checkbox checked", "Passed")
-                    
-            elif tag_name == 'select':
-                options = element.evaluate('el => Array.from(el.options).map(o => o.value)')
-                if options:
-                    value = random.choice(options)
-                    element.select_option(value=value)
-                    report.add_assertion("Select", f"Option selected: {value}", "Passed")
-                    
-            elif tag_name == 'button' or tag_name == 'a':
-                # For links, validate href before clicking
-                if tag_name == 'a':
-                    href = element.get_attribute("href")
-                    if href and not href.startswith(("#", "javascript:", "mailto:")):
-                        absolute_url = urljoin(self.base_url, href)
-                        if self.validate_link(page, absolute_url):
-                            report.add_assertion("Link", f"Valid link target: {absolute_url[:50]}...", "Passed")
-                        else:
-                            report.add_assertion("Link", f"Invalid link target: {absolute_url[:50]}...", "Failed")
-                            return
-                
-                element.click()
-                report.add_assertion("Click", f"Successfully clicked {tag_name}", "Passed")
-                
-            else:
-                if 'button' in element_html or 'click' in element_html:
-                    element.click()
-                    report.add_assertion("Click", "Successfully clicked interactive element", "Passed")
-                    
+                if element_type in ['file', 'hidden']:
+                    return False
+                if element_type == 'text':
+                    # Sanitize input value
+                    safe_value = "test_input"
+                    element.fill(safe_value)
+                    return True
+
+            # Safe click handling
+            if tag_name in ['button', 'a'] or element.is_enabled():
+                element.click(timeout=5000)
+                return True
+
+            return False
         except Exception as e:
-            report.add_assertion("Interaction", f"Failed to interact with {tag_name} element", "Failed", e)
-            print(f"Error during smart interaction: {str(e)}")
-            
+            report.add_assertion('interaction', 'Element interaction failed', 'Failed', 
+                               error=str(e), url=page.url, element_info=str(element))
+            return False
+
     def _perform_page_checks(self, page, report):
         try:
             # Get current URL

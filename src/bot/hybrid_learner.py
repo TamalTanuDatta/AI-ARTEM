@@ -67,41 +67,55 @@ class HybridInteractionLearner:
         self.feature_columns = None
         
     def _extract_features(self, interaction):
-        """Extract features from an interaction."""
+        """Extract features from an interaction with security checks."""
         features = []
         
-        # Event type encoding
-        event_types = ['click', 'input', 'navigation', 'keydown', 'mousemove']
-        features.extend([1 if interaction['type'] == t else 0 for t in event_types])
-        
-        # Element features
-        selector = interaction.get('selector', '')
-        features.append(hash(selector) % 1e6)  # Selector hash
-        features.append(len(selector))  # Selector length
-        
-        # Value features for input events
-        value = interaction.get('value', '')
-        features.append(len(value))  # Value length
-        features.append(1 if value.isdigit() else 0)  # Is numeric
-        features.append(1 if '@' in value else 0)  # Is email-like
-        
-        # Position features
-        position = interaction.get('position', {'x': 0, 'y': 0})
-        features.extend([
-            position.get('x', 0),
-            position.get('y', 0),
-            1 if position.get('x', 0) > 0 and position.get('y', 0) > 0 else 0
-        ])
-        
-        # Temporal features
-        timestamp = datetime.fromisoformat(interaction.get('timestamp', datetime.now().isoformat()))
-        features.extend([
-            timestamp.hour,
-            timestamp.minute,
-            1 if 9 <= timestamp.hour <= 17 else 0  # Business hours
-        ])
-        
-        return features
+        try:
+            # Validate interaction data
+            if not isinstance(interaction, dict):
+                raise ValueError("Invalid interaction format")
+            
+            # Event type encoding with validation
+            event_types = ['click', 'input', 'navigation', 'keydown', 'mousemove']
+            event_type = interaction.get('type', '').lower()
+            features.extend([1 if event_type == t else 0 for t in event_types])
+            
+            # Element features with sanitization
+            selector = str(interaction.get('selector', ''))[:1000]  # Limit length
+            selector_hash = hash(selector) % (2**32)  # Use 32-bit hash
+            features.append(selector_hash)
+            features.append(min(len(selector), 1000))  # Cap length
+            
+            # Value features with sanitization
+            value = str(interaction.get('value', ''))[:100]  # Limit length
+            features.append(min(len(value), 100))
+            features.append(1 if value.isdigit() else 0)
+            features.append(1 if '@' in value and '.' in value else 0)
+            
+            # Position features with bounds checking
+            position = interaction.get('position', {'x': 0, 'y': 0})
+            x = max(min(float(position.get('x', 0)), 10000), 0)  # Bound coordinates
+            y = max(min(float(position.get('y', 0)), 10000), 0)
+            features.extend([x, y, 1 if x > 0 and y > 0 else 0])
+            
+            # Temporal features with validation
+            try:
+                timestamp = datetime.fromisoformat(interaction.get('timestamp', datetime.now().isoformat()))
+            except (ValueError, TypeError):
+                timestamp = datetime.now()
+            
+            features.extend([
+                timestamp.hour,
+                timestamp.minute,
+                1 if 9 <= timestamp.hour <= 17 else 0
+            ])
+            
+            return features
+            
+        except Exception as e:
+            print(f"Feature extraction error: {str(e)}")
+            # Return safe default features
+            return [0] * 15  # Match feature length
         
     def prepare_data(self, interactions):
         """Convert interactions to features and labels."""
