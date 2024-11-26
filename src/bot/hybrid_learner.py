@@ -280,38 +280,66 @@ class HybridInteractionLearner:
         return np.argmax(ensemble_pred, axis=1)
     
     def save_model(self, filename):
-        """Save both models and metadata."""
-        model_dir = os.path.dirname(filename)
-        os.makedirs(model_dir, exist_ok=True)
+        """Save both models and metadata with security checks."""
+        # Security: Validate filename and path
+        if not filename or '..' in filename or filename.startswith('/'):
+            raise ValueError("Invalid filename provided")
+            
+        # Ensure the file extension is .joblib
+        if not filename.endswith('.joblib'):
+            filename = f"{filename}.joblib"
+            
+        # Create a secure directory if it doesn't exist
+        save_dir = os.path.dirname(os.path.abspath(filename))
+        os.makedirs(save_dir, mode=0o755, exist_ok=True)
         
-        # Save Random Forest and metadata
-        joblib.dump({
+        # Save with restricted permissions
+        model_data = {
             'rf_model': self.rf_model,
+            'dl_model': self.dl_model.state_dict() if self.dl_model else None,
             'label_encoder': self.label_encoder,
             'best_params': self.best_params,
             'feature_columns': self.feature_columns
-        }, filename)
+        }
         
-        # Save Neural Network
-        if self.dl_model:
-            torch.save(self.dl_model.state_dict(), f"{filename}_nn.pt")
-        
+        try:
+            # Set umask to ensure file is created with restricted permissions
+            old_umask = os.umask(0o077)
+            joblib.dump(model_data, filename)
+            os.umask(old_umask)
+        except Exception as e:
+            raise IOError(f"Failed to save model securely: {str(e)}")
+            
     def load_model(self, filename):
-        """Load both models and metadata."""
-        # Load Random Forest and metadata
-        data = joblib.load(filename)
-        self.rf_model = data['rf_model']
-        self.label_encoder = data['label_encoder']
-        self.best_params = data['best_params']
-        self.feature_columns = data['feature_columns']
-        
-        # Load Neural Network if it exists
-        nn_path = f"{filename}_nn.pt"
-        if os.path.exists(nn_path):
-            self.dl_model = InteractionModule(
-                input_size=len(self.feature_columns),
-                hidden_size=self.best_params['nn_hidden_size'],
-                num_classes=len(self.label_encoder.classes_),
-                learning_rate=self.best_params['nn_learning_rate']
-            )
-            self.dl_model.load_state_dict(torch.load(nn_path))
+        """Load both models and metadata with security checks."""
+        # Security: Validate filename and path
+        if not filename or '..' in filename or filename.startswith('/'):
+            raise ValueError("Invalid filename provided")
+            
+        # Ensure file exists and is a regular file
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(f"Model file not found: {filename}")
+            
+        try:
+            model_data = joblib.load(filename)
+            
+            # Validate model data structure
+            required_keys = {'rf_model', 'label_encoder', 'feature_columns'}
+            if not all(key in model_data for key in required_keys):
+                raise ValueError("Invalid model file format")
+                
+            self.rf_model = model_data['rf_model']
+            self.label_encoder = model_data['label_encoder']
+            self.best_params = model_data['best_params']
+            self.feature_columns = model_data['feature_columns']
+            
+            if model_data['dl_model']:
+                self.dl_model = InteractionModule(
+                    input_size=len(self.feature_columns),
+                    hidden_size=self.best_params['nn_hidden_size'],
+                    num_classes=len(self.label_encoder.classes_)
+                )
+                self.dl_model.load_state_dict(model_data['dl_model'])
+                
+        except Exception as e:
+            raise IOError(f"Failed to load model securely: {str(e)}")
