@@ -20,21 +20,25 @@ jobs:
     permissions:
       contents: write
       pages: write
+      id-token: write # Required for GitHub Pages deployment
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
+        check-latest: true
+        cache: 'pip'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        python -m playwright install chromium
-        python -m playwright install-deps
+        python -m playwright install chromium --with-deps
 
     - name: Run autonomous tests
       run: |
@@ -44,15 +48,18 @@ jobs:
         PLAYWRIGHT_HEADLESS: "true"
 
     - name: Upload test report
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: test-report
         path: reports/*.html
         retention-days: 14
+        if-no-files-found: error
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
 
     - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v2
+      uses: actions/deploy-pages@v4
       id: deployment
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./reports
+        path: ./reports

@@ -3,21 +3,25 @@ name: Notify Slack on Report Update
 on:
   push:
     branches:
-      - main  # or your default branch
+      - main
     paths:
-      - 'reports/index.html'  # Only trigger when the report is updated
+      - 'reports/index.html'
+
+permissions:
+  contents: read
 
 jobs:
   notify-slack:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Send Slack notification
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.25.0
         with:
-          # For posting a rich message using Block Kit
           payload: |
             {
               "blocks": [
@@ -54,4 +58,5 @@ jobs:
               ]
             }
         env:
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
