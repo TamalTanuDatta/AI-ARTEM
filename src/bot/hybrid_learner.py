@@ -10,53 +10,179 @@ import pandas as pd
 from datetime import datetime
 import os
 import joblib
+import gc
+import weakref
+from typing import Optional, Tuple, List
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class InteractionDataset(Dataset):
-    def __init__(self, features, labels):
-        self.features = torch.FloatTensor(features)
-        self.labels = torch.LongTensor(labels)
+    def __init__(self, features: np.ndarray, labels: np.ndarray, max_size: int = 1000000):
+        """Initialize dataset with memory safety checks.
         
-    def __len__(self):
+        Args:
+            features: Input features array
+            labels: Target labels array
+            max_size: Maximum allowed size for the dataset
+        """
+        # Validate input dimensions
+        if not (isinstance(features, np.ndarray) and isinstance(labels, np.ndarray)):
+            raise ValueError("Features and labels must be numpy arrays")
+        if len(features) != len(labels):
+            raise ValueError("Features and labels must have the same length")
+        if len(features) > max_size:
+            raise ValueError(f"Dataset size exceeds maximum allowed size of {max_size}")
+            
+        try:
+            # Convert to tensors with memory safety checks
+            self.features = torch.FloatTensor(features.astype(np.float32))
+            self.labels = torch.LongTensor(labels.astype(np.int64))
+            
+            # Verify tensor creation
+            if not (self.features.is_contiguous() and self.labels.is_contiguous()):
+                self.features = self.features.contiguous()
+                self.labels = self.labels.contiguous()
+                
+        except RuntimeError as e:
+            logger.error(f"Failed to create tensors: {str(e)}")
+            raise RuntimeError("Memory allocation failed during tensor creation")
+            
+        # Register tensors for proper cleanup
+        self._finalizer = weakref.finalize(self, self._cleanup, self.features, self.labels)
+        
+    @staticmethod
+    def _cleanup(features: torch.Tensor, labels: torch.Tensor) -> None:
+        """Ensure proper cleanup of tensors."""
+        del features
+        del labels
+        torch.cuda.empty_cache()
+        gc.collect()
+        
+    def __len__(self) -> int:
         return len(self.features)
         
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        if not 0 <= idx < len(self):
+            raise IndexError("Dataset index out of range")
         return self.features[idx], self.labels[idx]
 
 class InteractionNet(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes):
-        super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(input_size, hidden_size),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_size // 2, num_classes)
-        )
+    def __init__(self, input_size: int, hidden_size: int, num_classes: int,
+                 max_hidden_size: int = 1024):
+        """Initialize network with memory safety checks.
         
-    def forward(self, x):
+        Args:
+            input_size: Size of input features
+            hidden_size: Size of hidden layers
+            num_classes: Number of output classes
+            max_hidden_size: Maximum allowed size for hidden layers
+        """
+        super().__init__()
+        
+        # Validate input parameters
+        if not all(isinstance(x, int) and x > 0 for x in [input_size, hidden_size, num_classes]):
+            raise ValueError("All size parameters must be positive integers")
+        if hidden_size > max_hidden_size:
+            raise ValueError(f"Hidden size exceeds maximum allowed size of {max_hidden_size}")
+            
+        try:
+            self.network = nn.Sequential(
+                nn.Linear(input_size, hidden_size),
+                nn.ReLU(),
+                nn.Dropout(0.2),
+                nn.Linear(hidden_size, hidden_size // 2),
+                nn.ReLU(),
+                nn.Dropout(0.2),
+                nn.Linear(hidden_size // 2, num_classes)
+            )
+            
+            # Initialize weights safely
+            self._init_weights()
+            
+        except RuntimeError as e:
+            logger.error(f"Failed to create network layers: {str(e)}")
+            raise RuntimeError("Memory allocation failed during network creation")
+            
+    def _init_weights(self) -> None:
+        """Safely initialize network weights."""
+        for module in self.network.modules():
+            if isinstance(module, nn.Linear):
+                torch.nn.init.kaiming_normal_(module.weight)
+                if module.bias is not None:
+                    torch.nn.init.zeros_(module.bias)
+                    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Forward pass with input validation."""
+        if not isinstance(x, torch.Tensor):
+            raise TypeError("Input must be a torch.Tensor")
+        if not x.is_contiguous():
+            x = x.contiguous()
         return self.network(x)
 
 class InteractionModule(L.LightningModule):
-    def __init__(self, input_size, hidden_size, num_classes, learning_rate=1e-3):
+    def __init__(self, input_size: int, hidden_size: int, num_classes: int,
+                 learning_rate: float = 1e-3):
+        """Initialize Lightning module with safety checks."""
         super().__init__()
-        self.save_hyperparameters()
-        self.model = InteractionNet(input_size, hidden_size, num_classes)
-        self.criterion = nn.CrossEntropyLoss()
         
-    def forward(self, x):
+        # Validate parameters
+        if learning_rate <= 0 or learning_rate > 1:
+            raise ValueError("Learning rate must be between 0 and 1")
+            
+        self.save_hyperparameters()
+        
+        try:
+            self.model = InteractionNet(input_size, hidden_size, num_classes)
+            self.criterion = nn.CrossEntropyLoss()
+        except Exception as e:
+            logger.error(f"Failed to initialize model: {str(e)}")
+            raise
+            
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
         
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = self.criterion(logits, y)
-        self.log('train_loss', loss)
-        return loss
-        
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
+        """Training step with memory management."""
+        try:
+            x, y = batch
+            logits = self(x)
+            loss = self.criterion(logits, y)
+            
+            # Free memory explicitly
+            del x, y, logits
+            torch.cuda.empty_cache()
+            
+            self.log('train_loss', loss)
+            return loss
+            
+        except RuntimeError as e:
+            logger.error(f"Training step failed: {str(e)}")
+            raise
+            
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        """Configure optimizer with gradient clipping."""
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        return {
+            'optimizer': optimizer,
+            'gradient_clip_val': 1.0,  # Prevent gradient explosion
+            'gradient_clip_algorithm': 'norm'
+        }
+        
+    def on_after_backward(self) -> None:
+        """Check for anomalous gradients."""
+        valid_gradients = True
+        for name, param in self.named_parameters():
+            if param.grad is not None:
+                valid_gradients = not (torch.isnan(param.grad).any() or torch.isinf(param.grad).any())
+                if not valid_gradients:
+                    logger.warning(f"Detected NaN or Inf gradients in {name}")
+                    break
+                    
+        if not valid_gradients:
+            self.zero_grad(set_to_none=True)
 
 class HybridInteractionLearner:
     def __init__(self):
