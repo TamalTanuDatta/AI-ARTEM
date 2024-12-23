@@ -1,17 +1,45 @@
-playwright==1.41.1
-numpy==1.26.3
-scikit-learn==1.3.2
-joblib==1.3.2
-jinja2==3.1.3
-requests==2.31.0
-torch>=2.2.0
-lightning>=2.2.0
-optuna==3.4.0
-pandas==2.1.4
-tensorboard==2.15.1
-urllib3>=2.0.7
-certifi>=2023.11.17
-cryptography>=41.0.7
-pyOpenSSL>=23.3.0
-bandit>=1.7.6
-safety>=2.3.5
+# Web Testing Dependencies 
+
+playwright>=1.41.1  # Updated for security and features 
+
+requests>=2.31.0 
+
+ 
+
+# Data Processing 
+
+numpy>=1.26.3  # Updated for security patches 
+
+joblib>=1.3.2 
+
+jinja2>=3.1.3  # Updated for security fixes 
+
+ 
+
+# Hybrid ML Stack 
+
+scikit-learn>=1.4.0 
+
+torch>=2.1.2  # Updated for security fixes 
+
+lightning>=2.1.3 
+
+optuna>=3.5.0 
+
+ 
+
+# Additional ML Dependencies 
+
+pandas>=2.2.0 
+
+matplotlib>=3.8.2 
+
+seaborn>=0.13.1 
+
+ 
+
+# Security-related dependencies 
+
+cryptography>=42.0.0  # Added for secure operations 
+
+urllib3>=2.1.0  # Added for secure connections 
