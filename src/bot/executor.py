@@ -258,7 +258,7 @@ class TestReport:
 
         <head> 
 
-            <title>Leasingmarkt Autonomous Testing Report</title> 
+            <title>AI-ARTEM (Autonomous Testing Machine) Test Report</title> 
 
             <style> 
 
@@ -780,7 +780,7 @@ class TestReport:
 
                 <div class="title-container"> 
 
-                    <h1 class="animated-title">Leasingmarkt Autonomous Testing Report</h1> 
+                    <h1 class="animated-title">AI-ARTEM (Autonomous Testing Machine) Test Report</h1> 
 
                 </div> 
 
