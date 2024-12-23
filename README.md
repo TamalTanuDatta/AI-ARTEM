@@ -124,7 +124,7 @@ View the report by opening `reports/index.html` in your web browser.
 ### CI/CD Integration
 Test reports are available in two formats:
 1. **GitHub Pages (Latest Report)**
-   - Visit [https://fictional-goggles-kg4v225.pages.github.io/](https://fictional-goggles-kg4v225.pages.github.io/)
+   - Visit https://tamaltanudatta.github.io/AI-ARTEM/
    - This page is automatically updated after each test run
 
 2. **GitHub Actions Artifacts**
