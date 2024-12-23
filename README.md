@@ -9,29 +9,40 @@ The system consists of three main components:
 
 ## Workflow Diagram
 ```mermaid
+%%{init: { 'theme': 'base', 'themeVariables': { 'fontSize': '16px' } }}%%
 graph TB
-    subgraph Recording[Recording Phase]
-        A[User Interaction] -->|Records| B[Interaction Recorder]
-        B -->|Saves| C[JSON Data]
-        style Recording fill:#f5f5f5,stroke:#333,stroke-width:2px
+    subgraph Recording[" Recording Phase "]
+        direction TB
+        A[/"👤 User Interaction"/]:::input -->|Records| B["📝 Interaction Recorder"]
+        B -->|Saves| C[("💾 JSON Data")]:::data
+        style Recording fill:#e1f5fe,stroke:#01579b,stroke-width:2px
     end
-    subgraph Learning[Learning Phase]
-        C -->|Feeds into| D[Feature Engineering]
-        D -->|Processes| E[Hybrid Model]
-        E -->|Optimizes| F[Hyperparameter Tuning]
-        F -->|Trains| G[Final Model]
-        style Learning fill:#e6f3ff,stroke:#333,stroke-width:2px
+
+    subgraph Learning[" Learning Phase "]
+        direction TB
+        C -->|Feeds into| D["🔧 Feature Engineering"]
+        D -->|Processes| E["🧠 Hybrid Model"]
+        E -->|Optimizes| F["⚙️ Hyperparameter Tuning"]
+        F -->|Trains| G[("📊 Final Model")]:::data
+        style Learning fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     end
-    subgraph Testing[Testing Phase]
-        G -->|Guides| H[Automated Tester]
-        H -->|Executes| I[Website Tests]
-        I -->|Generates| J[HTML Reports]
-        style Testing fill:#f0fff0,stroke:#333,stroke-width:2px
+
+    subgraph Testing[" Testing Phase "]
+        direction TB
+        G -->|Guides| H["🤖 Automated Tester"]
+        H -->|Executes| I["🌐 Website Tests"]
+        I -->|Generates| J["📋 HTML Reports"]:::output
+        style Testing fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     end
-    classDef default fill:#fff,stroke:#333,stroke-width:1px;
-    classDef phase fill:#f5f5f5,stroke:#333,stroke-width:2px;
-    class A,B,C,D,E,F,G,H,I,J default;
-    class Recording,Learning,Testing phase;
+
+    %% Node styles
+    classDef default fill:#fff,stroke:#333,stroke-width:1px,rx:5px,ry:5px
+    classDef input fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    classDef data fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef output fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+
+    %% Link styles
+    linkStyle default stroke:#666,stroke-width:2px
 ```
 
 ## Usage
