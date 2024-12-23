@@ -1,68 +1,71 @@
-name: Autonomous Tests
+name: Nightly Autonomous Tests
 
 on:
-  workflow_dispatch:
-    inputs:
-      test_duration:
-        description: 'Test duration in seconds'
-        required: true
-        default: '120'
-        type: string
-      target_url:
-        description: 'Target website URL'
-        required: true
-        default: 'https://www.leasingmarkt.de'
-        type: string
-
   schedule:
-    - cron: '0 3 * * *'  # Runs at 03:00 UTC every day
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+  workflow_dispatch:  # Allows manual trigger
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  test:
+  run-autonomous-tests:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write # Required for GitHub Pages deployment
-
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
     steps:
     - uses: actions/checkout@v4
       with:
-        fetch-depth: 1
-
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
-        check-latest: true
-        cache: 'pip'
-
+        
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m pip install --upgrade pip wheel setuptools
+        pip install --upgrade pip setuptools wheel
         pip install -r requirements.txt
-        python -m playwright install chromium --with-deps
+        
+    - name: Install Playwright browsers
+      run: |
+        python -m playwright install chromium
+        python -m playwright install-deps
+        
+    - name: Create directories
+      run: |
+        mkdir -p src/bot/data
+        mkdir -p reports
 
     - name: Run autonomous tests
       run: |
-        mkdir -p reports
-        python3 -m src.bot.autonomous_lm_test --duration ${{ github.event.inputs.test_duration }} --url ${{ github.event.inputs.target_url }}
+        python -m src.bot.autonomous_lm_test
       env:
+        GITHUB_ACTIONS: "true"
         PLAYWRIGHT_HEADLESS: "true"
-
-    - name: Upload test report
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-report
-        path: reports/*.html
-        retention-days: 14
-        if-no-files-found: error
-
+        
     - name: Setup Pages
       uses: actions/configure-pages@v4
-
-    - name: Deploy to GitHub Pages
-      uses: actions/deploy-pages@v4
-      id: deployment
+      
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        path: ./reports
+        path: reports
+        
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+      
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-artifacts
+        path: |
+          reports/*.html
+        retention-days: 14
