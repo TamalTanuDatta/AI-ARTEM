@@ -14,6 +14,9 @@ on:
         default: 'https://www.leasingmarkt.de'
         type: string
 
+  schedule:
+    - cron: '0 3 * * *'  # Runs at 03:00 UTC every day
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -43,7 +46,7 @@ jobs:
     - name: Run autonomous tests
       run: |
         mkdir -p reports
-        python3 -m src.bot.autonomous_lm_test_2_min --duration ${{ github.event.inputs.test_duration }} --url ${{ github.event.inputs.target_url }}
+        python3 -m src.bot.autonomous_lm_test --duration ${{ github.event.inputs.test_duration }} --url ${{ github.event.inputs.target_url }}
       env:
         PLAYWRIGHT_HEADLESS: "true"
 
